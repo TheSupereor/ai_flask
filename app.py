@@ -1,30 +1,14 @@
-from flask import Flask, request, jsonify
-import requests
+from flask import Flask
+from flask_cors import CORS
+from api import api_bp  # Importa o Blueprint definido em api/__init__.py
 
-AI_url = "http://localhost:11434"
+def initialize_app():
+    app = Flask(__name__)
+    CORS(app)
 
-app = Flask(__name__)
+    # Registra as rotas da API com o prefixo /api
+    app.register_blueprint(api_bp, url_prefix='/api')
 
-@app.route("/ask", methods=['POST'])
-def ask():
-    data = request.json
-    prompt = data.get("prompt", "")
-    
-    if not prompt:
-        return jsonify({"error": "O prompt não pode ser vazio"}), 400
-    
-    ask_AI_url = AI_url + "/api/generate"
-    response = requests.post(ask_AI_url, json={
-        "model": "mistral",
-        "prompt": prompt,
-        "stream": False
-    })
-    
-    if response.status_code != 200:
-        return jsonify({"error": "Erro ao se comunicar com a IA"}), 500
-    
-    return jsonify({"response": response.json()["response"]})
-    
-    
+initialize_app()
 # if __name__ == "__main__":
 #     app.run(port=5000, debug=True)
