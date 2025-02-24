@@ -2,13 +2,15 @@ import requests
 from bs4 import BeautifulSoup
 from newspaper import Article
 
-from api.database.database import get_saved_content, get_user_links_fromdb, save_content
+from api.database.database import get_bot_links_fromdb, get_saved_content, save_content
 
-def save_from_url(user_id, url):
+def save_from_url(bot_id, url):
     """Busca o conteúdo salvo ou faz scraping"""
-    saved_content = get_saved_content(user_id, url)
+    print(bot_id)
+    print(url)
+    saved_content = get_saved_content(bot_id, url)
     if saved_content:
-        print(f"🔹 Conteúdo já salvo {url} do usuário {user_id}")
+        print(f"🔹 Conteúdo já salvo {url} do usuário {bot_id}")
         return saved_content
 
     try:
@@ -18,16 +20,16 @@ def save_from_url(user_id, url):
         article.parse()
         content = article.text[:1000]  # Limita a 1000 caracteres
 
-        save_content(user_id, url, content)  # Salva para o usuário
+        save_content(bot_id, url, content)  # Salva para o usuário
         return content
     except Exception as e:
         print(f"Erro ao processar {url}: {e}")
-        return None
+        return e
 
-def extract_article_from_url(user_id: str, url: str):
+def extract_article_from_url(bot_id: str, url: str):
     """Baixa o artigo e extrai o conteúdo principal"""
     # 1️⃣ Verifica se o link já está no banco
-    saved_content = get_saved_content(user_id, url)
+    saved_content = get_saved_content(bot_id, url)
     if saved_content:
         print(f"🔹 Usando conteúdo salvo para {url}")
         return saved_content
@@ -38,17 +40,17 @@ def extract_article_from_url(user_id: str, url: str):
         content = soup.get_text()[:1000]  # Limita a 1000 caracteres
 
         # 3️⃣ Salva no banco para uso futuro
-        save_content(user_id, url, content)
+        save_content(bot_id, url, content)
         return content
     except Exception as e:
         print(f"Erro ao processar {url}: {e}")
         return None
 
-def search_in_links(user_id: str, query, links):
+def search_in_links(bot_id: str, query, links):
     """Pesquisa os links e retorna apenas os trechos que contêm o termo da busca"""
     results = []
     for link in links:
-        text = save_from_url(user_id, link)  # Obtém o texto do link
+        text = save_from_url(bot_id, link)  # Obtém o texto do link
         if not text:
             continue
 
@@ -64,12 +66,12 @@ def search_in_links(user_id: str, query, links):
     
     return results if results else ["Nenhum resultado relevante encontrado."]
 
-def get_links_from_user(user_id: str):
+def get_links_from_bot(bot_id: str):
     """Obtém links salvos de usuário"""
-    print(f"Obtendo links de usuário {user_id}")
+    print(f"Obtendo links de usuário {bot_id}")
     try:
-        links = get_user_links_fromdb(user_id)
+        links = get_bot_links_fromdb(bot_id)
         return links
     except Exception as e:
-        print(f"Erro ao obter links de usuário {user_id}")
+        print(f"Erro ao obter links de usuário {bot_id}")
         return None
