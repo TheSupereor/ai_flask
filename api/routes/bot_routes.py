@@ -61,26 +61,17 @@ def ask_rag_doc():
     if not bot:
         return jsonify({"error": "bot não encontrado"}), 400
 
-    # 1️⃣ Pergunta sem contexto
-    initial_response = generate_response(bot.model, prompt)
-
-    # 2️⃣ Se o modelo tem certeza, retornamos a resposta
-    if initial_response["certainty"]:
-        return jsonify({"response": initial_response["response"], "source": "IA sem RAG"})
-
-    # 3️⃣ Se não tem certeza, busca no ChromaDB
     relevant_docs = search_documents(prompt, bot_id, top_k=3)
     context = "\n".join(relevant_docs) if relevant_docs else "Nenhuma informação relevante encontrada."
 
-    # 4️⃣ Pergunta novamente com contexto do RAG
-    full_prompt = f"Contexto: {context}\n\nPergunta: {prompt}"
+    full_prompt = f"Utilize essas informações como contexto: {context}\n\nRespondendo essa pergunta: {prompt}"
     final_response = generate_response(model, full_prompt)
 
     return jsonify({"response": final_response["response"], "source": "RAG"})
 
 @bot_bp.route('/ask_with_links', methods=['POST'])
 def ask_with_links():
-    ### Pergunta primeiro para a IA, e se necessário, busca em links
+    """Pergunta primeiro para a IA, e se necessário, busca em links""" 
     data = request.json
     model = data.get("model", DEFAULT_MODEL)
     prompt = data.get("prompt", "")
@@ -94,23 +85,14 @@ def ask_with_links():
     if not bot:
         return jsonify({"error": "bot não encontrado"}), 400
     
-    # 1️⃣ Pergunta sem contexto
-    initial_response = generate_response(model, prompt)
-
-    if initial_response["certainty"]:
-        return jsonify({"response": initial_response["response"], "source": "IA sem RAG"})
-
-    # 2️⃣ Se a IA não tem certeza, busca nos links fornecidos pelo usuário
     extracted_info = search_in_links(bot_id, prompt, links)
 
     if not extracted_info:
         return jsonify({"error": "Nenhuma informação útil encontrada nos links."})
 
-    # 3️⃣ Monta um novo prompt com o conteúdo dos links
     context = "\n".join(extracted_info)
     full_prompt = f"Baseado nessas fontes:\n{context}\n\nPergunta: {prompt}"
 
-    # 4️⃣ Pergunta para a IA novamente com contexto
     final_response = generate_response(model, full_prompt)
 
     return jsonify({"response": final_response["response"], "source": "Links"})
