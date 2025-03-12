@@ -1,7 +1,7 @@
 import pika
 import json
 
-from api.services.ollama_service import generate_response
+from api.services.ollama_service import generate_response_based_bot
 
 RABBITMQ_HOST = 'localhost'
 MESSAGES_QUEUE_NAME = 'messages-queue'
@@ -10,10 +10,16 @@ DEFAULT_MODEL = "smollm:135m"
 
 def process_request(request_data):
     """Processar mensagem"""
+    # Todo: fazer com que resposta gerada leve em conta identificador, para que um bot específico responda
     messageInfo = request_data['data']
-    response = generate_response(DEFAULT_MODEL, request_data['data']['message'])
+    response = generate_response_based_bot(messageInfo['message'], messageInfo['bot_id'])
     messageInfo['message'] = response['response'];
     return {"success": "true", "response": messageInfo}
+
+# def on_dl_request(ch, method, props, body):
+#     request_data = json.loads(body.decode('utf-8'))
+#     print(f"Recebido: {request_data}")
+    
 
 def on_request(ch, method, props, body):
     request_data = json.loads(body.decode('utf-8'))
@@ -40,20 +46,24 @@ def start_rpc_server():
         queue=MESSAGES_QUEUE_NAME, 
         durable=True,
         arguments={
-            'x-message-ttl': 60000,
+            'x-message-ttl': 30000,
             'x-dead-letter-exchange': 'dead_letter_exchange',
             'x-dead-letter-routing-key': 'dead_letter_key'
         }
     )
-    #channel.exchange_declare(exchange='dead_letter_exchange', exchange_type='direct', durable=True)
-    #channel.queue_declare(DEAD_LETTER_QUEUE, durable=True)
-    #channel.queue_bind(DEAD_LETTER_QUEUE, exchange='dead_letter_exchange', routing_key='dead_letter_key')
     
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(queue=MESSAGES_QUEUE_NAME, on_message_callback=on_request)
+    channel.confirm_delivery()
+    # consumir mensagens da dead letter
+    # channel.exchange_declare(exchange='dead_letter_exchange', exchange_type='direct', durable=True)
+    # channel.queue_declare(DEAD_LETTER_QUEUE, durable=True)
+    # channel.queue_bind(DEAD_LETTER_QUEUE, exchange='dead_letter_exchange', routing_key='dead_letter_key')
+    # channel.basic_consume(queue=DEAD_LETTER_QUEUE, on_message_callback=on_request)
     
     print("Servidor RPC aguardando requisições...")
     channel.start_consuming()
+    
 
 if __name__ == "__main__":
     start_rpc_server()

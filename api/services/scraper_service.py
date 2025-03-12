@@ -18,7 +18,7 @@ def save_from_url(bot_id, url):
         article = Article(url)
         article.download()
         article.parse()
-        content = article.text[:1000]  # Limita a 1000 caracteres
+        content = article.text
 
         save_content(bot_id, url, content)  # Salva para o usuário
         return content
@@ -37,7 +37,7 @@ def extract_article_from_url(bot_id: str, url: str):
     try:
         response = requests.get(url, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
-        content = soup.get_text()[:1000]  # Limita a 1000 caracteres
+        content = soup.get_text()
 
         # 3️⃣ Salva no banco para uso futuro
         save_content(bot_id, url, content)
@@ -60,7 +60,7 @@ def search_in_links(bot_id: str, query, links):
         if lower_query in lower_text:
             sentences = text.split(". ")  # Divide o texto em frases
             matching_sentences = [s for s in sentences if lower_query in s.lower()]
-            result_text = " [...] ".join(matching_sentences[:3])  # Pega no máximo 3 trechos
+            result_text = " [...] ".join(matching_sentences[:5])  # Pega trechos
 
             results.append(f"🔎 **Resultado encontrado:**\n📌 **Fonte:** {link}\n📄 **Trecho:** {result_text}\n")
     
@@ -68,7 +68,6 @@ def search_in_links(bot_id: str, query, links):
 
 def get_links_from_bot(bot_id: str):
     """Obtém links salvos de usuário"""
-    print(f"Obtendo links de usuário {bot_id}")
     try:
         links = get_bot_links_fromdb(bot_id)
         return links

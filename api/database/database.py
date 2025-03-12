@@ -6,10 +6,11 @@ def create_db():
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS bots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id TEXT PRIMARY KEY,
             name TEXT,
             model TEXT,
-            user_id INTEGER
+            user_id INTEGER,
+            additional_instr TEXT
         )
     """)
     cursor.execute("""
@@ -77,13 +78,13 @@ def get_bots_from_user(user_id):
     conn.close()
     return [{"url": bot[0], "content": bot[1]} for bot in bots]
     
-def save_bot(name, model, user_id):
+def save_bot(id, name, model, user_id, additional_instr):
     """Cria um bot no banco"""
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT OR REPLACE INTO bots (name, model, user_id) VALUES (?, ?, ?)
-    """, (name, model, user_id))
+        INSERT OR REPLACE INTO bots (id, name, model, user_id, additional_instr) VALUES (?, ?, ?, ?, ?)
+    """, (id, name, model, user_id, additional_instr | ""))
     conn.commit()
     conn.close()
     return "ok"

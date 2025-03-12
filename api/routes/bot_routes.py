@@ -11,15 +11,16 @@ DEFAULT_MODEL = "smollm:135m"
 def create_bot():
     """"Cria um novo bot"""
     data = request.json
+    id = data.get("id", "")
     name = data.get("name", "")
     user_id = data.get("user_id", "")
     model = data.get("model", DEFAULT_MODEL)
     
-    if not model or not name or not user_id:
-        return jsonify({"error": "name, user_id e model devem ser fornecidos"}), 400
+    if not id or not model or not name or not user_id:
+        return jsonify({"error": "id, name, user_id e model devem ser fornecidos"}), 400
     
-    result = save_bot(name, model, user_id)
-    return jsonify({"message": "bot criado com sucesso!"})
+    result = save_bot(id, name, model, user_id)
+    return jsonify({"message": "bot criado com sucesso!", "data": result})
 
 @bot_bp.route('/bot_list', methods=['POST'])
 def get_bot_list():
